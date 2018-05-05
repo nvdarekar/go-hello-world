@@ -1,16 +1,54 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"log"
 	"net/http"
+	"os"
+
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/joho/godotenv"
+	"github.com/nvdarekar/go-hello-world/db"
 )
 
-func handler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprintf(w, "Hello World!")
+func indexHandler(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprintf(w, "Hello World")
+}
+
+func saveHandler(w http.ResponseWriter, r *http.Request) {
+	input := r.URL.Query().Get("input")
+	if input != "" {
+		insert, err := db.DBConn.Prepare("INSERT INTO inputs(input) VALUES(?)")
+		if err != nil {
+			log.Fatal(err)
+		}
+		insert.Exec(input)
+		fmt.Fprintf(w, "ok")
+	}
+}
+
+func dbConnect() (db *sql.DB) {
+	dbConnectionStr := fmt.Sprintf("%s:%s@tcp(%s)/%s",
+		os.Getenv("DB_USER_NAME"),
+		os.Getenv("DB_PASSWORD"),
+		os.Getenv("DB_HOST")+":"+os.Getenv("DB_PORT"),
+		os.Getenv("DB_NAME"))
+	db, err := sql.Open("mysql", dbConnectionStr)
+	if err != nil {
+		panic(err.Error())
+	}
+	return db
 }
 
 func main() {
-	http.HandleFunc("/", handler)
+	// load env variables
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+	db.DBConn = dbConnect()
+	http.HandleFunc("/", indexHandler)
+	http.HandleFunc("/save", saveHandler)
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
