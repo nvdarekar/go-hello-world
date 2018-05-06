@@ -7,7 +7,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"github.com/nvdarekar/go-hello-world/db"
@@ -75,5 +74,5 @@ func main() {
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/save", saveHandler)
 	http.HandleFunc("/retrieve", retrieveHandler)
-	log.Fatal(http.ListenAndServe(":3000", nil))
+	log.Fatal(http.ListenAndServe(":8080", nil))
 }
