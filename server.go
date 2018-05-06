@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -28,6 +29,29 @@ func saveHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func retrieveHandler(w http.ResponseWriter, r *http.Request) {
+	rows, err := db.DBConn.Query("SELECT input FROM inputs")
+	if err != nil {
+		log.Fatal(err)
+	}
+	var inputs []string
+	for rows.Next() {
+		var input string
+		err = rows.Scan(&input)
+		if err != nil {
+			panic(err.Error())
+		}
+		inputs = append(inputs, input)
+	}
+	js, err := json.Marshal(inputs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func dbConnect() (db *sql.DB) {
 	dbConnectionStr := fmt.Sprintf("%s:%s@tcp(%s)/%s",
 		os.Getenv("DB_USER_NAME"),
@@ -50,5 +74,6 @@ func main() {
 	db.DBConn = dbConnect()
 	http.HandleFunc("/", indexHandler)
 	http.HandleFunc("/save", saveHandler)
+	http.HandleFunc("/retrieve", retrieveHandler)
 	log.Fatal(http.ListenAndServe(":3000", nil))
 }
